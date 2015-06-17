@@ -1,0 +1,5 @@
+*.py[cd]
+.vagrant/
+.svn/
+.git/
+/thewulf/*

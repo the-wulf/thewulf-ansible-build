@@ -1,0 +1,56 @@
+---
+- name: update apt cache
+  sudo: yes
+  apt: update_cache=yes
+
+- name: get system packages
+  sudo: yes
+  apt: name={{ item }} state=present
+  with_items:
+    - git
+    - unzip
+    - python-dev
+    - build-essential
+    - mysql-server-5.5
+    - python-mysqldb
+    - libapache2-mod-passenger
+    - apache2
+    - vim
+    - htop
+  notify: restart mysql
+
+- name: create mysql database
+  sudo: yes
+  mysql_db: name=thewulfdb state=present
+
+- name: create mysql user
+  sudo: yes
+  mysql_user: name=thewulf password= priv=thewulfdb.*:ALL state=present
+
+- name: move apache config
+  sudo: yes
+  template: src=thewulf-local.conf.j2 dest=/etc/apache2/sites-enabled/thewulf-local.conf
+
+- name: enable passenger
+  sudo: yes
+  apache2_module: name=passenger state=present
+  notify: restart apache
+
+- name: create users filesystem
+  file: path={{ item }} state=directory
+  with_items:
+    - "{{ user_home }}/opt"
+    - "{{ user_home }}/bin"
+    - "{{ user_home }}/var"
+    - "{{ user_home }}/tmp"
+    - "{{ user_home }}/build"
+    - "{{ user_home }}/scripts"
+
+
+- name: copy dot files
+  template: src={{ item.src }} dest={{ user_home }}/{{ item.dest }}
+  with_items:
+    - { src: bash_profile.j2, dest: .bash_profile }
+    - { src: aliases.j2, dest: .aliases }
+    - { src: exports.j2, dest: .exports }
+    - { src: functions.j2, dest: .functions }

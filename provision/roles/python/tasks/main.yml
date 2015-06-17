@@ -1,0 +1,55 @@
+---
+# checks
+- name: check if python is installed correctly
+  stat: path={{ user_home }}/opt/python-2.7.7/bin/python
+  register: python_installed
+
+- name: check if pip is installed correctly
+  stat: path={{ user_home }}/opt/python-2.7.7/bin/pip
+  register: pip_installed
+
+# plays
+- name: get user python
+  get_url: url=http://www.python.org/ftp/python/2.7.7/Python-2.7.7.tgz dest={{ user_home }}/tmp/Python-2.7.7.tgz
+  when: python_installed.stat.exists == False
+  register: python_downloaded
+
+- debug: msg="Python-2.7.7 package was downloaded"
+  when: python_downloaded|changed
+
+- name: unpack Python tar
+  unarchive: src={{ user_home }}/tmp/Python-2.7.7.tgz dest={{ user_home }}/build copy=no
+  when: python_installed.stat.exists == False
+
+- name: build python from source
+  shell: "{{ item }} chdir={{ user_home }}/build/Python-2.7.7"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/python-2.7.7
+    - make
+    - make install
+  when: python_installed.stat.exists == False
+
+- name: download pip
+  get_url: url=https://bootstrap.pypa.io/get-pip.py dest={{ user_home }}/tmp/get-pip.py
+  when: pip_installed.stat.exists == False
+
+- name: install users pip
+  shell: "{{ user_home }}/opt/python-2.7.7/bin/python get-pip.py chdir={{ user_home }}/tmp"
+  when: pip_installed.stat.exists == False
+
+- name: install virtualenv
+  pip: name=virtualenv executable={{ user_home }}/opt/python-2.7.7/bin/pip
+
+- name: cleanup python build
+  file: dest={{ item }} state=absent
+  with_items:
+    - '{{ user_home }}/tmp/Python-2.7.7.tgz'
+    - '{{ user_home }}/build/Python-2.7.7'
+    - '{{ user_home }}/tmp/get-pip.py'
+  when: python_installed.stat.exists == True and pip_installed.stat.exists == True
+
+- name: setup pip cache
+  file: path={{ user_home }}/.pip state=directory
+
+- name: add pip.conf
+  template: src=pip.conf.j2 dest={{ user_home }}/.pip/pip.conf

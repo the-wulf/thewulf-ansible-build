@@ -1,0 +1,16 @@
+---
+- hosts: all
+  sudo: no
+  user: vagrant
+  vars:
+    - user_home: '/home/vagrant'
+    - project_dir: '/home/vagrant/thewulf.org'
+    - project_name: 'thewulf'
+    - git_home: 'https://github.com/the-wulf/thewulf-webapp.git'
+    - git_branch: 'development'
+  roles:
+    - setup
+    - python
+    - ffmpeg
+    - build
+    #- deploy

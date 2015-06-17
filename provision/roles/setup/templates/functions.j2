@@ -1,0 +1,9 @@
+workon () {
+  if [ -z "$1" ]; then
+    echo "CLIERROR:: workon() must include the website to work on"
+    return 1
+  else
+    source $HOME/$1/env/bin/activate; cd $HOME/$1/thewulf
+  fi
+  return 0
+} 

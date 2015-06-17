@@ -1,0 +1,30 @@
+---
+- name: check for project env
+  stat: path={{ project_dir }}/env/bin/python
+  register: venv_created
+
+- name: create project env
+  shell: "{{ user_home }}/opt/python-2.7.7/bin/virtualenv -p {{ user_home }}/opt/python-2.7.7/bin/python {{ project_dir }}/env"
+  when: venv_created.stat.exists == False
+
+- name: checkout latest git branch
+  git: repo={{ git_home }} dest={{ project_dir }}/{{ project_name }} version={{ git_branch }}
+
+- name: install virtualenv packages
+  pip: requirements={{ project_dir }}/{{ project_name }}/requirements/common.pip virtualenv={{ project_dir }}/env
+
+- name: syncdb migrate collect static compress
+  django_manage: command={{ item }} virtualenv={{ project_dir }}/env app_path={{ project_dir }}/{{ project_name }} settings=settings.local
+  with_items:
+    - syncdb
+    - migrate
+    - collectstatic
+
+- name: symlink passenger_wsgi
+  file: src={{ project_dir }}/{{ project_name }}/settings/passenger_wsgi.py dest={{ project_dir }}/passenger_wsgi.py state=link
+
+- name: ensure tmp directory exists
+  file: path={{ project_dir }}/tmp state=directory
+
+- name: touch restart.txt
+  file: path={{ project_dir }}/tmp/restart.txt state=touch

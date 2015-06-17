@@ -1,0 +1,8 @@
+<VirtualHost *:80>
+  ServerName local.{{ project_name }}
+  DocumentRoot {{ project_dir }}/{{ project_name }}
+  <Directory {{ project_dir }}/{{ project_name }}>
+    Allow from all
+    Options -MultiViews
+  </Directory>
+</VirtualHost>

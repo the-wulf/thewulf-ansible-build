@@ -1,0 +1,174 @@
+---
+# checks
+- name: check for ffmpeg
+  stat: path={{ user_home }}/opt/ffmpeg/bin/ffmpeg
+  register: ffmpeg_exists
+
+- name: check for yasm
+  stat: path={{ user_home }}/opt/yasm/bin/yasm
+  register: yasm_exists
+
+- name: check for ogg
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libogg.a
+  register: ogg_exists
+
+- name: check for vorbis
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libvorbis.a
+  register: vorbis_exists
+
+- name: check for x264
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libx264.so
+  register: x264_exists
+
+- name: check for faac
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libfaac.a
+  register: faac_exists
+
+- name: check for theora
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libtheora.a
+  register: theora_exists
+
+- name: check for vpx
+  stat: path={{ user_home }}/opt/ffmpeg/lib/libvpx.a
+  register: vpx_exists
+
+####
+- name: create ffmpeg dir
+  file: path={{ user_home }}/opt/ffmpeg state=directory
+
+# first build the dependencies
+- name: get yasm source
+  get_url: url=http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz dest={{ user_home }}/tmp/yasm.tar.gz
+  when: yasm_exists.stat.exists == False
+
+- name: unzip yasm source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: yasm_exists.stat.exists == False
+
+- name: build yasm
+  shell: "{{ item }} chdir={{ user_home }}/build/yasm"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/yasm
+    - make
+    - make install
+  when: yasm_exists.stat.exists == False
+
+- name: get ogg source
+  get_url: url=http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz dest={{ user_home }}/tmp/libogg.tar.gz
+  when: ogg_exists.stat.exists == False
+
+- name: unzip ogg source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: ogg_exists.stat.exists == False
+
+- name: build ogg
+  shell: "{{ item }} chdir={{ user_home }}/build/libogg"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg
+    - make
+    - make install
+  when: ogg_exists.stat.exists == False
+
+- name: get vorbis source
+  get_url: url=http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz dest={{ user_home }}/tmp/libvorbis.tar.gz
+  when: vorbis_exists.stat.exists == False
+
+- name: unzip vorbis source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: vorbis_exists.stat.exists == False
+
+- name: build vorbis
+  shell: "{{ item }} chdir={{ user_home }}/build/libvorbis"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg --with-ogg={{ user_home }}/opt/ffmpeg
+    - make
+    - make install
+  when: vorbis_exists.stat.exists == False
+
+- name: get x264 source
+  git: repo=git://git.videolan.org/x264.git dest=/build/x264
+  when: x264_exists.stat.exists == False
+
+- name: build x264
+  shell: "{{ item }} chdir={{ user_home }}/build/x264"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg --enable-shared
+    - make
+    - make install
+  when: x264_exists.stat.exists == False
+
+- name: get faac source
+  get_url: url=wget http://downloads.sourceforge.net/faac/faac-1.28.tar.gz dest={{ user_home }}/tmp/faac.tar.gz
+  when: faac_exists.stat.exists == False
+
+- name: unzip faac source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: faac_exists.stat.exists == False
+
+- name: build faac
+  shell: "{{ item }} chdir={{ user_home }}/build/faac"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg
+    - make
+    - make install
+  when: faac_exists.stat.exists == False
+
+- name: get theora source
+  get_url: url=http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.gz dest={{ user_home }}/tmp/libtheora.tar.gz
+  when: theora_exists.stat.exists == False
+
+- name: unzip theora source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: theora_exists.stat.exists == False
+
+- name: build theora
+  shell: "{{ item }} chdir={{ user_home }}/build/libtheora"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg --with-ogg={{ user_home }}/opt/ffmpeg
+    - make
+    - make install
+  when: theora_exists.stat.exists == False
+
+- name: get vpx source
+  get_url: url=https://github.com/webmproject/libvpx/archive/master.zip dest={{ user_home }}/tmp/vpx.zip
+  when: vpx_exists.stat.exists == False
+
+- name: unzip vpx source
+  unarchive: src={{ user_home }}/tmp/ dest={{ user_home }}/build
+  when: vpx_exists.stat.exists == False
+
+- name: build vpx
+  shell: "{{ item }} chdir={{ user_home }}/build/libvpx-master"
+  with_items:
+    - ./configure --prefix={{ user_home }}/opt/ffmpeg
+    - make
+    - make install
+  when: vpx_exists.stat.exists == False
+
+# now ffmpeg
+- name: getting ffmpeg source
+  get_url: url=http://ffmpeg.org/releases/ffmpeg-snapshot-git.tar.bz2 dest={{ user_home }}/tmp
+  when: ffmpeg_exists.stat.exists == False
+
+- name: unzip the ffmpeg source
+  unarchive: src={{ user_home }}/tmp/ffmpeg-snapshot-git.tar.bz2 dest={{ user_home }}/build
+  when: ffmpeg_exists.stat.exists == False
+
+- name: build ffmpeg
+  shell: "{{ item }} chdir={{ user_home }}/build/ffmpeg"
+  with_items:
+    - LDFLAGS=-L{{ user_home }}/opt/ffmpeg/lib \
+      CFLAGS=-I{{ user_home }}/opt/ffmpeg/include \
+      ./configure \
+      --prefix={{ user_home }}/opt/ffmpeg \
+      --enable-gpl \
+      --enable-nonfree \
+      --enable-libvpx \
+      --enable-libvorbis\
+      --enable-pthreads \
+      --enable-libx264 \
+      --enable-libfaac \
+      --enable-libtheora
+    - make
+    - make install
+  when: ffmpeg_exists.stat.exists == False
