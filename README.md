@@ -28,3 +28,4 @@ assumes the following technologies::
 - setup a media server instance on the same dev box with a generic apache file server conf to serve our uploaded assets.
 - setup uwsgi + nginx -- the apache passenger stuff is rediculous
 - find better mirrors for downloading .tar files
+- set the ansible playbooks up for pushing updates to dev.thewulf.org
